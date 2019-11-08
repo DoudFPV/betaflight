@@ -19,6 +19,9 @@
  */
 
 #include "platform.h"
+#include "fc/rc.h"
+#include "scheduler/scheduler.h"
+#include "rx/rx.h"
 
 static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
 {
@@ -68,4 +71,45 @@ static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
 
         gyro.gyroADCf[axis] = gyroADCf;
     }
+
+    //Update Dyn LPF at 100Hz
+    if(UseDynBiquad) {
+        #define BIQUAD_Q 1.0f / sqrtf(2.0f)     /* quality factor - 2nd order butterworth*/
+        float MinFreq = gyroConfig()->gyro_lowpass_hz;        
+        MinFreq += ((float)(rcData[THROTTLE] - 1000) * 0.1f); //Add 0 - 50Hz
+
+            //Update X
+            {
+                int axis = X;
+                float setPoint      = getSetpointRate(axis);
+                float FilterGyro    = gyro.gyroADCf[axis];
+                float lpfHz = constrainf( MinFreq + ABS(setPoint - FilterGyro) + ABS(FilterGyro / 4.0f), MinFreq, 500.0f);
+                biquadFilterUpdate(&gyro.lowpassFilter[axis].biquadFilterState, lpfHz, gyro.targetLooptime, BIQUAD_Q, FILTER_LPF);
+                DEBUG_SET(DEBUG_ALTITUDE, 0, lpfHz);
+            }
+
+            //Update Y
+            {
+                int axis = Y;
+                float setPoint      = getSetpointRate(axis);
+                float FilterGyro    = gyro.gyroADCf[axis];
+                float lpfHz = constrainf( MinFreq + ABS(setPoint - FilterGyro) + ABS(FilterGyro / 4.0f), MinFreq, 500.0f);
+                biquadFilterUpdate(&gyro.lowpassFilter[axis].biquadFilterState, lpfHz, gyro.targetLooptime, BIQUAD_Q, FILTER_LPF);
+                DEBUG_SET(DEBUG_ALTITUDE, 1, lpfHz);
+            }
+
+            //Update Z
+            {
+                int axis = Z;
+                float setPoint      = getSetpointRate(axis);
+                float FilterGyro    = gyro.gyroADCf[axis];
+                float lpfHz = constrainf( MinFreq + ABS(setPoint - FilterGyro) + ABS(FilterGyro / 4.0f), MinFreq, 500.0f);
+                biquadFilterUpdate(&gyro.lowpassFilter[axis].biquadFilterState, lpfHz, gyro.targetLooptime, BIQUAD_Q, FILTER_LPF);
+                DEBUG_SET(DEBUG_ALTITUDE, 2, lpfHz);
+            }  
+
+            //Save CPU load
+            DEBUG_SET(DEBUG_ALTITUDE, 3, MinFreq);
+    }
+
 }

@@ -112,6 +112,7 @@ static bool gyroHasOverflowProtection = true;
 
 static FAST_RAM_ZERO_INIT bool useDualGyroDebugging;
 static FAST_RAM_ZERO_INIT flight_dynamics_index_t gyroDebugAxis;
+static bool UseDynBiquad = false;
 
 typedef struct gyroCalibration_s {
     float sum[XYZ_AXIS_COUNT];
@@ -641,6 +642,13 @@ void gyroInitLowpassFilterLpf(int slot, int type, uint16_t lpfHz)
             for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
                 biquadFilterInitLPF(&lowpassFilter[axis].biquadFilterState, lpfHz, gyro.targetLooptime);
             }
+            break;
+        case FILTER_DYN_BIQUAD:
+            *lowpassFilterApplyFn = (filterApplyFnPtr) biquadFilterApplyDF1;
+            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                biquadFilterInitLPF(&lowpassFilter[axis].biquadFilterState, lpfHz, gyro.targetLooptime);
+            }   
+            UseDynBiquad = true;     
             break;
         }
     }

@@ -165,12 +165,12 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     
 	
     
-    DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)(100 * gpsTrust));
-    DEBUG_SET(DEBUG_ALTITUDE, 1, baroAlt);
-    DEBUG_SET(DEBUG_ALTITUDE, 2, gpsAlt);
-#ifdef USE_VARIO
-    DEBUG_SET(DEBUG_ALTITUDE, 3, estimatedVario);
-#endif
+//    DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)(100 * gpsTrust));
+//    DEBUG_SET(DEBUG_ALTITUDE, 1, baroAlt);
+//    DEBUG_SET(DEBUG_ALTITUDE, 2, gpsAlt);
+//#ifdef USE_VARIO
+//    DEBUG_SET(DEBUG_ALTITUDE, 3, estimatedVario);
+//#endif
 }
 
 bool isAltitudeOffset(void)

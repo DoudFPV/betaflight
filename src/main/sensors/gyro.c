@@ -31,6 +31,7 @@
 #include "common/axis.h"
 #include "common/maths.h"
 #include "common/filter.h"
+#include "common/biquad.h"
 
 #include "config/feature.h"
 
@@ -112,7 +113,10 @@ static bool gyroHasOverflowProtection = true;
 
 static FAST_RAM_ZERO_INIT bool useDualGyroDebugging;
 static FAST_RAM_ZERO_INIT flight_dynamics_index_t gyroDebugAxis;
-static bool UseDynBiquad = false;
+//static bool UseDynBiquad = false;
+
+biquadFilter_t TestBiquad;
+biquad_axis_state_t TestBiquadImuf;
 
 typedef struct gyroCalibration_s {
     float sum[XYZ_AXIS_COUNT];
@@ -643,15 +647,23 @@ void gyroInitLowpassFilterLpf(int slot, int type, uint16_t lpfHz)
                 biquadFilterInitLPF(&lowpassFilter[axis].biquadFilterState, lpfHz, gyro.targetLooptime);
             }
             break;
-        case FILTER_DYN_BIQUAD:
-            *lowpassFilterApplyFn = (filterApplyFnPtr) biquadFilterApplyDF1;
-            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-                biquadFilterInitLPF(&lowpassFilter[axis].biquadFilterState, lpfHz, gyro.targetLooptime);
-            }   
-            UseDynBiquad = true;     
-            break;
+        // case FILTER_DYN_BIQUAD:
+        //     *lowpassFilterApplyFn = (filterApplyFnPtr) biquadFilterApplyDF1;
+        //     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+        //         biquadFilterInitLPF(&lowpassFilter[axis].biquadFilterState, lpfHz, gyro.targetLooptime);
+        //     }   
+        //     UseDynBiquad = true;     
+        //     break;
         }
     }
+
+    biquadFilterInitLPF(&TestBiquad, 10, gyro.targetLooptime);
+    biquad_imuf_init(10, &TestBiquadImuf, gyroDt , FILTER_TYPE_LOWPASS , 1.98f);
+
+    //For verification only
+    const float samplingRate = (1 / gyroDt);
+    DEBUG_SET(DEBUG_ALTITUDE, 3, samplingRate);
+
 }
 
 static uint16_t calculateNyquistAdjustedNotchHz(uint16_t notchHz, uint16_t notchCutoffHz)

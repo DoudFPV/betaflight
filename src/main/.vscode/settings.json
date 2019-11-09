@@ -1,6 +1,7 @@
 {
   "files.associations": {
     "filter.h": "c",
-    "rpm_filter.h": "c"
+    "rpm_filter.h": "c",
+    "platform.h": "c"
   }
 }

@@ -98,18 +98,18 @@ static void l3gd20IntExtiInit(gyroDev_t *gyro)
 
 void l3gd20GyroInit(gyroDev_t *gyro)
 {
-    spiSetDivisor(gyro->bus.busdev_u.spi.instance, SPI_CLOCK_STANDARD);
+    spiSetClkDivisor(dev, SPI_CLOCK_STANDARD);
 
-    spiBusWriteRegister(&gyro->bus, CTRL_REG5_ADDR, BOOT);
+    spiWriteReg(&gyro->bus, CTRL_REG5_ADDR, BOOT);
 
     delayMicroseconds(100);
 
-    spiBusWriteRegister(&gyro->bus, CTRL_REG1_ADDR, MODE_ACTIVE | OUTPUT_DATARATE_3 | AXES_ENABLE | BANDWIDTH_3);
-    //spiBusWriteRegister(&gyro->bus, CTRL_REG1_ADDR. MODE_ACTIVE | OUTPUT_DATARATE_3 | AXES_ENABLE | BANDWIDTH_4);
+    spiWriteReg(&gyro->bus, CTRL_REG1_ADDR, MODE_ACTIVE | OUTPUT_DATARATE_3 | AXES_ENABLE | BANDWIDTH_3);
+    //spiWriteReg(&gyro->bus, CTRL_REG1_ADDR. MODE_ACTIVE | OUTPUT_DATARATE_3 | AXES_ENABLE | BANDWIDTH_4);
 
     delayMicroseconds(1);
 
-    spiBusWriteRegister(&gyro->bus, CTRL_REG4_ADDR, BLOCK_DATA_UPDATE_CONTINUOUS | BLE_MSB | FULLSCALE_2000);
+    spiWriteReg(&gyro->bus, CTRL_REG4_ADDR, BLOCK_DATA_UPDATE_CONTINUOUS | BLE_MSB | FULLSCALE_2000);
 
     delay(100);
 
@@ -123,7 +123,10 @@ static bool l3gd20GyroRead(gyroDev_t *gyro)
 {
     uint8_t buf[6];
 
-    spiBusReadRegisterBuffer(&gyro->bus, OUT_X_L_ADDR | READ_CMD | MULTIPLEBYTE_CMD,buf, sizeof(buf));
+    const bool ack = spiReadRegMskBufRB(&gyro->bus, OUT_X_L_ADDR | READ_CMD | MULTIPLEBYTE_CMD,buf, sizeof(buf));
+    if (!ack) {
+        return false;
+    }
 
     gyro->gyroADCRaw[0] = (int16_t)((buf[0] << 8) | buf[1]);
     gyro->gyroADCRaw[1] = (int16_t)((buf[2] << 8) | buf[3]);

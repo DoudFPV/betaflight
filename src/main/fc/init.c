@@ -1025,6 +1025,11 @@ void init(void)
     motorEnable();
 #endif
 
+#ifdef USE_SPI
+    // Attempt to enable DMA on all SPI busses
+    spiInitBusDMA();
+#endif
+
     swdPinsInit();
 
     unusedPinsInit();

@@ -59,7 +59,7 @@ typedef enum {
 #elif defined(STM32F7)
     SPI_CLOCK_SLOW          = 256, //00.42188 MHz
     SPI_CLOCK_STANDARD      = 16,  //06.57500 MHz
-    SPI_CLOCK_FAST          = 8,   //13.50000 MHz
+    SPI_CLOCK_FAST          = 4,   //27.00000 MHz
     SPI_CLOCK_ULTRAFAST     = 2    //54.00000 MHz
 #elif defined(STM32H7)
     // spi_ker_ck = 100MHz
@@ -116,8 +116,15 @@ typedef enum SPIDevice {
 #define SPIDEV_COUNT 6
 #else
 #define SPIDEV_COUNT 4
-
 #endif
+
+#ifdef STM32F405xx
+    // STM32F405 can't DMA to/from the stack in FASTRAM (CCM SRAM)
+#define STACK_DMA_OK false
+#else
+#define STACK_DMA_OK true
+#endif
+
 
 // Macros to convert between CLI bus number and SPIDevice.
 #define SPI_CFG_TO_DEV(x)   ((x) - 1)
@@ -129,14 +136,9 @@ void spiPreinitByIO(IO_t io);
 void spiPreinitByTag(ioTag_t tag);
 
 bool spiInit(SPIDevice device, bool leadingEdge);
-void spiSetDivisor(SPI_TypeDef *instance, uint16_t divisor);
-uint8_t spiTransferByte(SPI_TypeDef *instance, uint8_t data);
-bool spiIsBusBusy(SPI_TypeDef *instance);
+void spiResetStream(dmaChannelDescriptor_t *descriptor);
+void spiInitBusDMA();
 
-bool spiTransfer(SPI_TypeDef *instance, const uint8_t *txData, uint8_t *rxData, int len);
-
-uint16_t spiGetErrorCounter(SPI_TypeDef *instance);
-void spiResetErrorCounter(SPI_TypeDef *instance);
 
 SPIDevice spiDeviceByInstance(SPI_TypeDef *instance);
 SPI_TypeDef *spiInstanceByDevice(SPIDevice device);
@@ -144,32 +146,31 @@ SPI_TypeDef *spiInstanceByDevice(SPIDevice device);
 //
 // BusDevice API
 //
+// Routines with RB suffix return false if bus is busy on entry
+//
+bool spiSetBusInstance(extDevice_t *dev, uint32_t device, resourceOwner_e owner);
+void spiSetClkDivisor(extDevice_t *dev, SPIClockDivider_e divider);
 
-bool spiBusIsBusBusy(const busDevice_t *bus);
+void spiSequence(extDevice_t *dev, busSegment_t *segments, bool tryDMA);
+void spiWait(extDevice_t *dev);
+bool spiIsBusy(extDevice_t *dev);
 
-bool spiBusTransfer(const busDevice_t *bus, const uint8_t *txData, uint8_t *rxData, int length);
+uint8_t spiReadReg(extDevice_t *dev, uint8_t reg);
+uint8_t spiReadRegMsk(extDevice_t *dev, uint8_t reg);
+void spiReadRegBuf(extDevice_t *dev, uint8_t reg, uint8_t *data, uint8_t length);
+bool spiReadRegBufRB(extDevice_t *dev, uint8_t reg, uint8_t *data, uint8_t length);
+bool spiReadRegMskBufRB(extDevice_t *dev, uint8_t reg, uint8_t *data, uint8_t length);
 
-uint8_t spiBusTransferByte(const busDevice_t *bus, uint8_t data);
-void spiBusWriteByte(const busDevice_t *bus, uint8_t data);
-bool spiBusRawTransfer(const busDevice_t *bus, const uint8_t *txData, uint8_t *rxData, int len);
+void spiWrite(extDevice_t *dev, uint8_t data);
+void spiWriteReg(extDevice_t *dev, uint8_t reg, uint8_t data);
+bool spiWriteRegRB(extDevice_t *dev, uint8_t reg, uint8_t data);
 
-bool spiBusWriteRegister(const busDevice_t *bus, uint8_t reg, uint8_t data);
-bool spiBusRawReadRegisterBuffer(const busDevice_t *bus, uint8_t reg, uint8_t *data, uint8_t length);
-bool spiBusReadRegisterBuffer(const busDevice_t *bus, uint8_t reg, uint8_t *data, uint8_t length);
-void spiBusWriteRegisterBuffer(const busDevice_t *bus, uint8_t reg, const uint8_t *data, uint8_t length);
-uint8_t spiBusRawReadRegister(const busDevice_t *bus, uint8_t reg);
-uint8_t spiBusReadRegister(const busDevice_t *bus, uint8_t reg);
-void spiBusSetInstance(busDevice_t *bus, SPI_TypeDef *instance);
-void spiBusSetDivisor(busDevice_t *bus, SPIClockDivider_e divider);
+uint8_t spiReadWrite(extDevice_t *dev, uint8_t data);
 
-void spiBusTransactionInit(busDevice_t *bus, SPIMode_e mode, SPIClockDivider_e divider);
-void spiBusTransactionSetup(const busDevice_t *bus);
-void spiBusTransactionBegin(const busDevice_t *bus);
-void spiBusTransactionEnd(const busDevice_t *bus);
-bool spiBusTransactionWriteRegister(const busDevice_t *bus, uint8_t reg, uint8_t data);
-uint8_t spiBusTransactionReadRegister(const busDevice_t *bus, uint8_t reg);
-bool spiBusTransactionReadRegisterBuffer(const busDevice_t *bus, uint8_t reg, uint8_t *data, uint8_t length);
-bool spiBusTransactionTransfer(const busDevice_t *bus, const uint8_t *txData, uint8_t *rxData, int length);
+void spiWriteRegBuf(extDevice_t *dev, uint8_t reg, uint8_t *data, uint32_t length);
+uint8_t spiReadWriteReg(extDevice_t *dev, uint8_t reg, uint8_t data);
+void spiReadWriteBuf(extDevice_t *dev, uint8_t *txData, uint8_t *rxData, int len);
+bool spiReadWriteBufRB(extDevice_t *dev, uint8_t *txData, uint8_t *rxData, int length);
 
 //
 // Config
@@ -177,5 +178,7 @@ bool spiBusTransactionTransfer(const busDevice_t *bus, const uint8_t *txData, ui
 
 struct spiPinConfig_s;
 void spiPinConfigure(const struct spiPinConfig_s *pConfig);
-void spiBusDeviceRegister(const busDevice_t *bus);
+void spiNegateCS(extDevice_t *dev);
+bool spiUseDMA(extDevice_t *dev);
+void spiBusDeviceRegister(extDevice_t *dev);
 uint8_t spiGetRegisteredDeviceCount(void);

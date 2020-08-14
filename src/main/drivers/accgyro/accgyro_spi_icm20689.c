@@ -37,7 +37,7 @@
 #include "drivers/time.h"
 
 
-static void icm20689SpiInit(const busDevice_t *bus)
+static void icm20689SpiInit(extDevice_t *dev)
 {
     static bool hardwareInitialised = false;
 
@@ -46,28 +46,28 @@ static void icm20689SpiInit(const busDevice_t *bus)
     }
 
 
-    spiSetDivisor(bus->busdev_u.spi.instance, SPI_CLOCK_STANDARD);
+    spiSetClkDivisor(dev, SPI_CLOCK_STANDARD);
 
     hardwareInitialised = true;
 }
 
-uint8_t icm20689SpiDetect(const busDevice_t *bus)
+uint8_t icm20689SpiDetect(extDevice_t *dev)
 {
-    icm20689SpiInit(bus);
+    icm20689SpiInit(dev);
 
-    spiSetDivisor(bus->busdev_u.spi.instance, SPI_CLOCK_INITIALIZATION); //low speed
+    spiSetClkDivisor(dev, SPI_CLOCK_INITIALIZATION); //low speed
 
     // reset the device configuration
-    spiBusWriteRegister(bus, MPU_RA_PWR_MGMT_1, ICM20689_BIT_RESET);
+    spiWriteReg(dev, MPU_RA_PWR_MGMT_1, ICM20689_BIT_RESET);
     delay(100);
 
     // reset the device signal paths
-    spiBusWriteRegister(bus, MPU_RA_SIGNAL_PATH_RESET, 0x03);
+    spiWriteReg(dev, MPU_RA_SIGNAL_PATH_RESET, 0x03);
     delay(100);
 
     uint8_t icmDetected;
 
-    const uint8_t whoAmI = spiBusReadRegister(bus, MPU_RA_WHO_AM_I);
+    const uint8_t whoAmI = spiReadRegMsk(dev, MPU_RA_WHO_AM_I);
 
     switch (whoAmI) {
     case ICM20601_WHO_AM_I_CONST:
@@ -87,7 +87,7 @@ uint8_t icm20689SpiDetect(const busDevice_t *bus)
         break;
     }
 
-    spiSetDivisor(bus->busdev_u.spi.instance, SPI_CLOCK_STANDARD);
+    spiSetClkDivisor(dev, SPI_CLOCK_STANDARD);
 
     return icmDetected;
 }
@@ -117,32 +117,32 @@ void icm20689GyroInit(gyroDev_t *gyro)
 {
     mpuGyroInit(gyro);
 
-    spiSetDivisor(gyro->bus.busdev_u.spi.instance, SPI_CLOCK_INITIALIZATION);
+    spiSetClkDivisor(&gyro->dev, SPI_CLOCK_INITIALIZATION);
 
     // Device was already reset during detection so proceed with configuration
 
-    spiBusWriteRegister(&gyro->bus, MPU_RA_PWR_MGMT_1, INV_CLK_PLL);
+    spiWriteReg(&gyro->dev, MPU_RA_PWR_MGMT_1, INV_CLK_PLL);
     delay(15);
-    spiBusWriteRegister(&gyro->bus, MPU_RA_GYRO_CONFIG, INV_FSR_2000DPS << 3);
+    spiWriteReg(&gyro->dev, MPU_RA_GYRO_CONFIG, INV_FSR_2000DPS << 3);
     delay(15);
-    spiBusWriteRegister(&gyro->bus, MPU_RA_ACCEL_CONFIG, INV_FSR_16G << 3);
+    spiWriteReg(&gyro->dev, MPU_RA_ACCEL_CONFIG, INV_FSR_16G << 3);
     delay(15);
-    spiBusWriteRegister(&gyro->bus, MPU_RA_CONFIG, mpuGyroDLPF(gyro));
+    spiWriteReg(&gyro->dev, MPU_RA_CONFIG, mpuGyroDLPF(gyro));
     delay(15);
-    spiBusWriteRegister(&gyro->bus, MPU_RA_SMPLRT_DIV, gyro->mpuDividerDrops); // Get Divider Drops
+    spiWriteReg(&gyro->dev, MPU_RA_SMPLRT_DIV, gyro->mpuDividerDrops); // Get Divider Drops
     delay(100);
 
     // Data ready interrupt configuration
-//    spiBusWriteRegister(&gyro->bus, MPU_RA_INT_PIN_CFG, 0 << 7 | 0 << 6 | 0 << 5 | 1 << 4 | 0 << 3 | 0 << 2 | 0 << 1 | 0 << 0);  // INT_ANYRD_2CLEAR, BYPASS_EN
-    spiBusWriteRegister(&gyro->bus, MPU_RA_INT_PIN_CFG, 0x10);  // INT_ANYRD_2CLEAR, BYPASS_EN
+//    spiWriteReg(&gyro->dev, MPU_RA_INT_PIN_CFG, 0 << 7 | 0 << 6 | 0 << 5 | 1 << 4 | 0 << 3 | 0 << 2 | 0 << 1 | 0 << 0);  // INT_ANYRD_2CLEAR, BYPASS_EN
+    spiWriteReg(&gyro->dev, MPU_RA_INT_PIN_CFG, 0x10);  // INT_ANYRD_2CLEAR, BYPASS_EN
 
     delay(15);
 
 #ifdef USE_MPU_DATA_READY_SIGNAL
-    spiBusWriteRegister(&gyro->bus, MPU_RA_INT_ENABLE, 0x01); // RAW_RDY_EN interrupt enable
+    spiWriteReg(&gyro->dev, MPU_RA_INT_ENABLE, 0x01); // RAW_RDY_EN interrupt enable
 #endif
 
-    spiSetDivisor(gyro->bus.busdev_u.spi.instance, SPI_CLOCK_STANDARD);
+    spiSetClkDivisor(&gyro->dev, SPI_CLOCK_STANDARD);
 }
 
 bool icm20689SpiGyroDetect(gyroDev_t *gyro)

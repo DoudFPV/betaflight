@@ -115,32 +115,28 @@ static bool bmp280GetUP(baroDev_t *baro);
 
 STATIC_UNIT_TESTED void bmp280Calculate(int32_t *pressure, int32_t *temperature);
 
-void bmp280BusInit(busDevice_t *busdev)
+void bmp280BusInit(extDevice_t *dev)
 {
 #ifdef USE_BARO_SPI_BMP280
-    if (busdev->bustype == BUSTYPE_SPI) {
-        IOHi(busdev->busdev_u.spi.csnPin); // Disable
-        IOInit(busdev->busdev_u.spi.csnPin, OWNER_BARO_CS, 0);
-        IOConfigGPIO(busdev->busdev_u.spi.csnPin, IOCFG_OUT_PP);
-#ifdef USE_SPI_TRANSACTION
-        spiBusTransactionInit(busdev, SPI_MODE0_POL_LOW_EDGE_1ST, SPI_CLOCK_STANDARD); // BMP280 supports Mode 0 or 3
-#else
-        spiBusSetDivisor(busdev, SPI_CLOCK_STANDARD);
-#endif
+    if (dev->bus->busType == BUSTYPE_SPI) {
+        IOHi(dev->busType_u.spi.csnPin); // Disable
+        IOInit(dev->busType_u.spi.csnPin, OWNER_BARO_CS, 0);
+        IOConfigGPIO(dev->busType_u.spi.csnPin, IOCFG_OUT_PP);
+        spiSetClkDivisor(dev, SPI_CLOCK_STANDARD);
     }
 #else
-    UNUSED(busdev);
+    UNUSED(dev);
 #endif
 }
 
-void bmp280BusDeinit(busDevice_t *busdev)
+void bmp280BusDeinit(extDevice_t *dev)
 {
 #ifdef USE_BARO_SPI_BMP280
-    if (busdev->bustype == BUSTYPE_SPI) {
-        spiPreinitByIO(busdev->busdev_u.spi.csnPin);
+    if (dev->bus->busType == BUSTYPE_SPI) {
+        spiPreinitByIO(dev->busType_u.spi.csnPin);
     }
 #else
-    UNUSED(busdev);
+    UNUSED(dev);
 #endif
 }
 
@@ -150,34 +146,34 @@ bool bmp280Detect(baroDev_t *baro)
 {
     delay(20);
 
-    busDevice_t *busdev = &baro->busdev;
+    extDevice_t *dev = &baro->dev;
     bool defaultAddressApplied = false;
 
-    bmp280BusInit(busdev);
+    bmp280BusInit(dev);
 
-    if ((busdev->bustype == BUSTYPE_I2C) && (busdev->busdev_u.i2c.address == 0)) {
+    if ((dev->bus->busType == BUSTYPE_I2C) && (dev->busType_u.i2c.address == 0)) {
         // Default address for BMP280
-        busdev->busdev_u.i2c.address = BMP280_I2C_ADDR;
+        dev->busType_u.i2c.address = BMP280_I2C_ADDR;
         defaultAddressApplied = true;
     }
 
-    busReadRegisterBuffer(busdev, BMP280_CHIP_ID_REG, &bmp280_chip_id, 1);  /* read Chip Id */
+    busReadRegisterBuffer(dev, BMP280_CHIP_ID_REG, &bmp280_chip_id, 1);  /* read Chip Id */
 
     if ((bmp280_chip_id != BMP280_DEFAULT_CHIP_ID) && (bmp280_chip_id != BME280_DEFAULT_CHIP_ID)) {
-        bmp280BusDeinit(busdev);
+        bmp280BusDeinit(dev);
         if (defaultAddressApplied) {
-            busdev->busdev_u.i2c.address = 0;
+            dev->busType_u.i2c.address = 0;
         }
         return false;
     }
 
-    busDeviceRegister(busdev);
+    busDeviceRegister(dev);
 
     // read calibration
-    busReadRegisterBuffer(busdev, BMP280_TEMPERATURE_CALIB_DIG_T1_LSB_REG, (uint8_t *)&bmp280_cal, sizeof(bmp280_calib_param_t));
+    busReadRegisterBuffer(dev, BMP280_TEMPERATURE_CALIB_DIG_T1_LSB_REG, (uint8_t *)&bmp280_cal, sizeof(bmp280_calib_param_t));
 
     // set oversampling + power mode (forced), and start sampling
-    busWriteRegister(busdev, BMP280_CTRL_MEAS_REG, BMP280_MODE);
+    busWriteRegister(dev, BMP280_CTRL_MEAS_REG, BMP280_MODE);
 
     // these are dummy as temperature is measured as part of pressure
     baro->combined_read = true;
@@ -219,24 +215,24 @@ static void bmp280StartUP(baroDev_t *baro)
 {
     // start measurement
     // set oversampling + power mode (forced), and start sampling
-    busWriteRegisterStart(&baro->busdev, BMP280_CTRL_MEAS_REG, BMP280_MODE);
+    busWriteRegisterStart(&baro->dev, BMP280_CTRL_MEAS_REG, BMP280_MODE);
 }
 
 static bool bmp280ReadUP(baroDev_t *baro)
 {
-    if (busBusy(&baro->busdev, NULL)) {
+    if (busBusy(&baro->dev, NULL)) {
         return false;
     }
 
     // read data from sensor
-    busReadRegisterBufferStart(&baro->busdev, BMP280_PRESSURE_MSB_REG, sensor_data, BMP280_DATA_FRAME_SIZE);
+    busReadRegisterBufferStart(&baro->dev, BMP280_PRESSURE_MSB_REG, sensor_data, BMP280_DATA_FRAME_SIZE);
 
     return true;
 }
 
 static bool bmp280GetUP(baroDev_t *baro)
 {
-    if (busBusy(&baro->busdev, NULL)) {
+    if (busBusy(&baro->dev, NULL)) {
         return false;
     }
 

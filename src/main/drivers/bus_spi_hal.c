@@ -103,28 +103,7 @@ void spiInitDevice(SPIDevice device, bool leadingEdge)
     HAL_SPI_Init(&spi->hspi);
 }
 
-// return uint8_t value or -1 when failure
-uint8_t spiTransferByte(SPI_TypeDef *instance, uint8_t out)
-{
-    uint8_t in;
-
-    spiTransfer(instance, &out, &in, 1);
-    return in;
-}
-
-/**
- * Return true if the bus is currently in the middle of a transmission.
- */
-bool spiIsBusBusy(SPI_TypeDef *instance)
-{
-    SPIDevice device = spiDeviceByInstance(instance);
-    if(spiDevice[device].hspi.State == HAL_SPI_STATE_BUSY)
-        return true;
-    else
-        return false;
-}
-
-bool spiTransfer(SPI_TypeDef *instance, const uint8_t *out, uint8_t *in, int len)
+static bool spiPrivReadWriteBufPolled(SPI_TypeDef *instance, const uint8_t *out, uint8_t *in, int len)
 {
     SPIDevice device = spiDeviceByInstance(instance);
     HAL_StatusTypeDef status;
@@ -140,10 +119,6 @@ bool spiTransfer(SPI_TypeDef *instance, const uint8_t *out, uint8_t *in, int len
     } else {
         // Tx and Rx
         status = HAL_SPI_TransmitReceive(&spiDevice[device].hspi, out, in, len, SPI_DEFAULT_TIMEOUT);
-    }
-
-    if(status != HAL_OK) {
-        spiTimeoutUserCallback(instance);
     }
 
     return true;
@@ -162,7 +137,7 @@ static uint32_t baudRatePrescaler[8] = {
     SPI_BAUDRATEPRESCALER_256,
 };
 
-void spiSetDivisor(SPI_TypeDef *instance, uint16_t divisor)
+void spiSetClkDivisor(dev, uint16_t divisor)
 {
     SPIDevice device = spiDeviceByInstance(instance);
 

@@ -98,7 +98,7 @@ static void icm42605SpiInit(const busDevice_t *bus)
     }
 
 
-    spiSetDivisor(bus->busdev_u.spi.instance, SPI_CLOCK_STANDARD);
+    spiSetClkDivisor(dev, SPI_CLOCK_STANDARD);
 
     hardwareInitialised = true;
 }
@@ -107,15 +107,15 @@ uint8_t icm42605SpiDetect(const busDevice_t *bus)
 {
     icm42605SpiInit(bus);
 
-    spiSetDivisor(bus->busdev_u.spi.instance, SPI_CLOCK_INITIALIZATION); //low speed
+    spiSetClkDivisor(dev, SPI_CLOCK_INITIALIZATION); //low speed
 
-    spiBusWriteRegister(bus, ICM42605_RA_PWR_MGMT0, 0x00);
+    spiWriteReg(bus, ICM42605_RA_PWR_MGMT0, 0x00);
 
     uint8_t icmDetected = MPU_NONE;
     uint8_t attemptsRemaining = 20;
     do {
         delay(150);
-        const uint8_t whoAmI = spiBusReadRegister(bus, MPU_RA_WHO_AM_I);
+        const uint8_t whoAmI = spiReadRegMsk(bus, MPU_RA_WHO_AM_I);
         switch (whoAmI) {
         case ICM42605_WHO_AM_I_CONST:
             icmDetected = ICM_42605_SPI;
@@ -132,7 +132,7 @@ uint8_t icm42605SpiDetect(const busDevice_t *bus)
         }
     } while (attemptsRemaining--);
 
-    spiSetDivisor(bus->busdev_u.spi.instance, SPI_CLOCK_STANDARD);
+    spiSetClkDivisor(dev, SPI_CLOCK_STANDARD);
 
     return icmDetected;
 }
@@ -188,9 +188,9 @@ void icm42605GyroInit(gyroDev_t *gyro)
 {
     mpuGyroInit(gyro);
 
-    spiSetDivisor(gyro->bus.busdev_u.spi.instance, SPI_CLOCK_INITIALIZATION);
+    spiSetClkDivisor(dev, SPI_CLOCK_INITIALIZATION);
 
-    spiBusWriteRegister(&gyro->bus, ICM42605_RA_PWR_MGMT0, ICM42605_PWR_MGMT0_TEMP_DISABLE_OFF | ICM42605_PWR_MGMT0_ACCEL_MODE_LN | ICM42605_PWR_MGMT0_GYRO_MODE_LN);
+    spiWriteReg(&gyro->bus, ICM42605_RA_PWR_MGMT0, ICM42605_PWR_MGMT0_TEMP_DISABLE_OFF | ICM42605_PWR_MGMT0_ACCEL_MODE_LN | ICM42605_PWR_MGMT0_GYRO_MODE_LN);
     delay(15);
 
     uint8_t outputDataRate = 0;
@@ -216,37 +216,37 @@ void icm42605GyroInit(gyroDev_t *gyro)
     uint8_t value;
 
     STATIC_ASSERT(INV_FSR_2000DPS == 3, "INV_FSR_2000DPS must be 3 to generate correct value");
-    spiBusWriteRegister(&gyro->bus, ICM42605_RA_GYRO_CONFIG0, (3 - INV_FSR_2000DPS) << 5 | (outputDataRate & 0x0F));
+    spiWriteReg(&gyro->bus, ICM42605_RA_GYRO_CONFIG0, (3 - INV_FSR_2000DPS) << 5 | (outputDataRate & 0x0F));
     delay(15);
 
-    value = spiBusReadRegister(&gyro->bus, ICM42605_RA_GYRO_CONFIG0);
+    value = spiReadRegMsk(&gyro->bus, ICM42605_RA_GYRO_CONFIG0);
     debug[1] = value;
 
     STATIC_ASSERT(INV_FSR_16G == 3, "INV_FSR_16G must be 3 to generate correct value");
-    spiBusWriteRegister(&gyro->bus, ICM42605_RA_ACCEL_CONFIG0, (3 - INV_FSR_16G) << 5 | (outputDataRate & 0x0F));
+    spiWriteReg(&gyro->bus, ICM42605_RA_ACCEL_CONFIG0, (3 - INV_FSR_16G) << 5 | (outputDataRate & 0x0F));
     delay(15);
 
-    value = spiBusReadRegister(&gyro->bus, ICM42605_RA_ACCEL_CONFIG0);
+    value = spiReadRegMsk(&gyro->bus, ICM42605_RA_ACCEL_CONFIG0);
     debug[2] = value;
 
-    spiBusWriteRegister(&gyro->bus, ICM42605_RA_GYRO_ACCEL_CONFIG0, ICM42605_ACCEL_UI_FILT_BW_LOW_LATENCY | ICM42605_GYRO_UI_FILT_BW_LOW_LATENCY);
+    spiWriteReg(&gyro->bus, ICM42605_RA_GYRO_ACCEL_CONFIG0, ICM42605_ACCEL_UI_FILT_BW_LOW_LATENCY | ICM42605_GYRO_UI_FILT_BW_LOW_LATENCY);
 
-    spiBusWriteRegister(&gyro->bus, ICM42605_RA_INT_CONFIG, ICM42605_INT1_MODE_PULSED | ICM42605_INT1_DRIVE_CIRCUIT_PP | ICM42605_INT1_POLARITY_ACTIVE_HIGH);
-    spiBusWriteRegister(&gyro->bus, ICM42605_RA_INT_CONFIG0, ICM42605_UI_DRDY_INT_CLEAR_ON_SBR);
+    spiWriteReg(&gyro->bus, ICM42605_RA_INT_CONFIG, ICM42605_INT1_MODE_PULSED | ICM42605_INT1_DRIVE_CIRCUIT_PP | ICM42605_INT1_POLARITY_ACTIVE_HIGH);
+    spiWriteReg(&gyro->bus, ICM42605_RA_INT_CONFIG0, ICM42605_UI_DRDY_INT_CLEAR_ON_SBR);
 
 #ifdef USE_MPU_DATA_READY_SIGNAL
-    spiBusWriteRegister(&gyro->bus, ICM42605_RA_INT_SOURCE0, ICM42605_UI_DRDY_INT1_EN_ENABLED);
+    spiWriteReg(&gyro->bus, ICM42605_RA_INT_SOURCE0, ICM42605_UI_DRDY_INT1_EN_ENABLED);
 
-    uint8_t intConfig1Value = spiBusReadRegister(&gyro->bus, ICM42605_RA_INT_CONFIG1);
+    uint8_t intConfig1Value = spiReadRegMsk(&gyro->bus, ICM42605_RA_INT_CONFIG1);
     // Datasheet says: "User should change setting to 0 from default setting of 1, for proper INT1 and INT2 pin operation"
     intConfig1Value &= ~(1 << ICM42605_INT_ASYNC_RESET_BIT);
     intConfig1Value |= (ICM42605_INT_TPULSE_DURATION_8 | ICM42605_INT_TDEASSERT_DISABLED);
 
-    spiBusWriteRegister(&gyro->bus, ICM42605_RA_INT_CONFIG1, intConfig1Value);
+    spiWriteReg(&gyro->bus, ICM42605_RA_INT_CONFIG1, intConfig1Value);
 #endif
     //
 
-    spiSetDivisor(gyro->bus.busdev_u.spi.instance, SPI_CLOCK_STANDARD);
+    spiSetClkDivisor(dev, SPI_CLOCK_STANDARD);
 }
 
 bool icm42605GyroReadSPI(gyroDev_t *gyro)
@@ -254,7 +254,7 @@ bool icm42605GyroReadSPI(gyroDev_t *gyro)
     static const uint8_t dataToSend[7] = {ICM42605_RA_GYRO_DATA_X1 | 0x80, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
     uint8_t data[7];
 
-    const bool ack = spiBusTransfer(&gyro->bus, dataToSend, data, 7);
+    const bool ack = spiReadWriteBufRB(&gyro->bus, dataToSend, data, 7);
     if (!ack) {
         return false;
     }

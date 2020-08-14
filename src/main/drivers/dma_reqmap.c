@@ -536,15 +536,19 @@ const dmaChannelSpec_t *dmaGetChannelSpecByPeripheral(dmaPeripheral_e device, ui
         const dmaPeripheralMapping_t *periph = &dmaPeripheralMapping[i];
 #if defined(STM32H7) || defined(STM32G4)
         if (periph->device == device && periph->index == index) {
-            dmaChannelSpec_t *dmaSpec = &dmaChannelSpec[opt];
+            const dmaChannelSpec_t *dmaSpec = &dmaChannelSpec[opt];
             dmaSetupRequest(dmaSpec, periph->dmaRequest);
-            return dmaSpec;
-        }
 #else
         if (periph->device == device && periph->index == index && periph->channelSpec[opt].ref) {
-            return &periph->channelSpec[opt];
-        }
+            const dmaChannelSpec_t *dmaSpec =  &periph->channelSpec[opt];
 #endif
+            dmaIdentifier_e dmaIdentifier = dmaGetIdentifier(dmaSpec->ref);
+            if (dmaGetOwner(dmaIdentifier)->owner == OWNER_FREE)
+            {
+                return dmaSpec;
+            }
+            // Look for another matching entry with no existing owner
+        }
     }
 
     return NULL;

@@ -84,4 +84,7 @@ typedef struct SPIDevice_s {
 extern spiDevice_t spiDevice[SPIDEV_COUNT];
 
 void spiInitDevice(SPIDevice device, bool leadingEdge);
-uint32_t spiTimeoutUserCallback(SPI_TypeDef *instance);
+void spiPrivInitStream(extDevice_t *dev, bool preInit);
+void spiPrivStartDMA(extDevice_t *dev);
+void spiPrivStopDMA (extDevice_t *dev);
+

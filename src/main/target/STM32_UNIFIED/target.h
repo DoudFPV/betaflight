@@ -20,6 +20,8 @@
 
 #pragma once
 
+#define USE_GYRO_SIMULATED
+
 #if defined(STM32F405)
 #define TARGET_BOARD_IDENTIFIER "S405"
 

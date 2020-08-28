@@ -212,7 +212,12 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .d_min = { 23, 25, 0 },      // roll, pitch, yaw
         .d_min_gain = 37,
         .d_min_advance = 20,
+#ifdef USE_GYRO_SIMULATED
+        .motor_output_limit = 10,   //to lower motor output when gyro is simulated
+#else
         .motor_output_limit = 100,
+#endif
+
         .auto_profile_cell_count = AUTO_PROFILE_CELL_COUNT_STAY,
         .transient_throttle_limit = 0,
         .profileName = { 0 },

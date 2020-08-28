@@ -36,6 +36,7 @@
 
 #include "drivers/accgyro/accgyro.h"
 #include "drivers/accgyro/accgyro_fake.h"
+#include "drivers/accgyro/accgyro_simulated.h"
 #include "drivers/accgyro/accgyro_mpu.h"
 #include "drivers/accgyro/accgyro_mpu3050.h"
 #include "drivers/accgyro/accgyro_mpu6050.h"
@@ -303,6 +304,7 @@ void gyroInitSensor(gyroSensor_t *gyroSensor, const gyroDeviceConfig_t *config)
     case GYRO_NONE:    // Won't ever actually get here, but included to account for all gyro types
     case GYRO_DEFAULT:
     case GYRO_FAKE:
+    case GYRO_SIMULATED :
     case GYRO_MPU6050:
     case GYRO_L3G4200D:
     case GYRO_MPU3050:
@@ -338,6 +340,15 @@ STATIC_UNIT_TESTED gyroHardware_e gyroDetect(gyroDev_t *dev)
     switch (gyroHardware) {
     case GYRO_DEFAULT:
         FALLTHROUGH;
+
+#ifdef USE_GYRO_SIMULATED
+    case GYRO_SIMULATED :
+        if (SimGyroDetect(dev)) {
+            gyroHardware = GYRO_SIMULATED;
+            break;
+        }
+        FALLTHROUGH;
+#endif
 
 #ifdef USE_GYRO_MPU6050
     case GYRO_MPU6050:

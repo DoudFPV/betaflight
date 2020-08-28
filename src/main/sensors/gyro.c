@@ -187,6 +187,13 @@ static void gyroSetCalibrationCycles(gyroSensor_t *gyroSensor)
         return;
     }
 #endif
+#if defined(USE_GYRO_SIMULATED) && !defined(UNIT_TEST)
+    if (gyroSensor->gyroDev.gyroHardware == GYRO_SIMULATED) {
+        gyroSensor->calibration.cyclesRemaining = 0;
+        return;
+    }
+#endif
+
     gyroSensor->calibration.cyclesRemaining = gyroCalculateCalibratingCycles();
 }
 

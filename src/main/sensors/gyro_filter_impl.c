@@ -22,6 +22,8 @@
 
 static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
 {
+    DEBUG_SET(DEBUG_SIM_GYRO, 0, lrintf(gyro.gyroADC[0]));
+    
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
         // DEBUG_GYRO_RAW records the raw value read from the sensor (not zero offset, not scaled)
         GYRO_FILTER_DEBUG_SET(DEBUG_GYRO_RAW, axis, gyro.rawSensorDev->gyroADCRaw[axis]);
@@ -44,6 +46,10 @@ static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
                 gyroADCf = gyro.sampleSum[axis] / gyro.sampleCount;
             }
             gyro.sampleSum[axis] = 0;
+        }
+
+        if (axis == gyro.gyroDebugAxis) {
+            DEBUG_SET(DEBUG_SIM_GYRO, 1, lrintf(gyroADCf));
         }
 
         // DEBUG_GYRO_SAMPLE(1) Record the post-downsample value for the selected debug axis
@@ -71,6 +77,10 @@ static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
         gyroADCf = gyro.notchFilter2ApplyFn((filter_t *)&gyro.notchFilter2[axis], gyroADCf);
         gyroADCf = gyro.lowpassFilterApplyFn((filter_t *)&gyro.lowpassFilter[axis], gyroADCf);
 
+        if (axis == gyro.gyroDebugAxis) {
+            DEBUG_SET(DEBUG_SIM_GYRO, 2, lrintf(gyroADCf));
+        }
+
         // DEBUG_GYRO_SAMPLE(3) Record the post-static notch and lowpass filter value for the selected debug axis
         GYRO_FILTER_AXIS_DEBUG_SET(axis, DEBUG_GYRO_SAMPLE, 3, lrintf(gyroADCf));
 
@@ -92,5 +102,8 @@ static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
 
         gyro.gyroADCf[axis] = gyroADCf;
     }
+
+    DEBUG_SET(DEBUG_SIM_GYRO, 3, lrintf(gyro.gyroADCf[0]));
+
     gyro.sampleCount = 0;
 }

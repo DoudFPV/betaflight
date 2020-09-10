@@ -105,6 +105,7 @@
 #include "flight/imu.h"
 #include "flight/mixer.h"
 #include "flight/pid.h"
+#include "flight/gyroanalyse.h"
 
 #include "io/beeper.h"
 #include "io/gps.h"
@@ -567,6 +568,13 @@ static void osdElementAntiGravity(osdElementParms_t *element)
 {
     if (pidOsdAntiGravityActive()) {
         strcpy(element->buff, "AG");
+    }
+}
+
+static void osdElementDynNotch(osdElementParms_t *element)
+{
+    if (OsdDynNotchActive()) {
+        strcpy(element->buff, "DN");
     }
 }
 
@@ -1575,6 +1583,7 @@ static const uint8_t osdElementDisplayOrder[] = {
 #endif
     OSD_COMPASS_BAR,
     OSD_ANTI_GRAVITY,
+    OSD_DYN_NOTCH,
 #ifdef USE_BLACKBOX
     OSD_LOG_STATUS,
 #endif
@@ -1683,6 +1692,7 @@ const osdElementDrawFn osdElementDrawFunction[OSD_ITEM_COUNT] = {
     [OSD_CORE_TEMPERATURE]        = osdElementCoreTemperature,
 #endif
     [OSD_ANTI_GRAVITY]            = osdElementAntiGravity,
+    [OSD_DYN_NOTCH]               = osdElementDynNotch,
 #ifdef USE_ACC
     [OSD_G_FORCE]                 = osdElementGForce,
 #endif

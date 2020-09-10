@@ -57,3 +57,5 @@ void gyroDataAnalysePush(gyroAnalyseState_t *state, const int axis, const float 
 void gyroDataAnalyse(gyroAnalyseState_t *state, biquadFilter_t *notchFilterDyn, biquadFilter_t *notchFilterDyn2);
 uint16_t getMaxFFT(void);
 void resetMaxFFT(void);
+bool OsdDynNotchActive(void);
+

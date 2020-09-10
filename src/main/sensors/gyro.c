@@ -132,6 +132,8 @@ void pgResetFn_gyroConfig(gyroConfig_t *gyroConfig)
     gyroConfig->dyn_notch_width_percent = 8;
     gyroConfig->dyn_notch_q = 120;
     gyroConfig->dyn_notch_min_hz = 150;
+    gyroConfig->dyn_notch_min_fft_amplitude = 40;
+    gyroConfig->dyn_notch_disable_post_time = 500;
     gyroConfig->gyro_filter_debug_axis = FD_ROLL;
 #ifdef USE_DYN_LPF2
     gyroConfig->dynlpf2_fmin = DEFAULT_DYNLPF2_FMIN;

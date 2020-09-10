@@ -179,6 +179,9 @@ static bool m25p16_waitForReady(flashDevice_t *fdevice)
 
 bool m25p16_detect(flashDevice_t *fdevice, uint32_t chipID)
 {
+    // Default SPI clock speed
+    uint16_t spiSpeed = SPI_CLOCK_FAST;
+
     switch (chipID) {
     case JEDEC_ID_WINBOND_W25Q16:
     case JEDEC_ID_MICRON_M25P16:
@@ -193,12 +196,14 @@ bool m25p16_detect(flashDevice_t *fdevice, uint32_t chipID)
     case JEDEC_ID_MACRONIX_MX25L3206E:
         fdevice->geometry.sectors = 64;
         fdevice->geometry.pagesPerSector = 256;
+        spiSpeed = SPI_CLOCK_ULTRAFAST;
         break;
     case JEDEC_ID_MICRON_N25Q064:
     case JEDEC_ID_WINBOND_W25Q64:
     case JEDEC_ID_MACRONIX_MX25L6406E:
         fdevice->geometry.sectors = 128;
         fdevice->geometry.pagesPerSector = 256;
+        spiSpeed = SPI_CLOCK_ULTRAFAST;
         break;
     case JEDEC_ID_MICRON_N25Q128:
     case JEDEC_ID_WINBOND_W25Q128:
@@ -206,11 +211,13 @@ bool m25p16_detect(flashDevice_t *fdevice, uint32_t chipID)
     case JEDEC_ID_CYPRESS_S25FL128L:
         fdevice->geometry.sectors = 256;
         fdevice->geometry.pagesPerSector = 256;
+        spiSpeed = SPI_CLOCK_ULTRAFAST;
         break;
     case JEDEC_ID_WINBOND_W25Q256:
     case JEDEC_ID_MACRONIX_MX25L25635E:
         fdevice->geometry.sectors = 512;
         fdevice->geometry.pagesPerSector = 256;
+         spiSpeed = SPI_CLOCK_ULTRAFAST;
         break;
     default:
         // Unsupported chip or not an SPI NOR flash
@@ -225,6 +232,11 @@ bool m25p16_detect(flashDevice_t *fdevice, uint32_t chipID)
     fdevice->geometry.pageSize = M25P16_PAGESIZE;
     fdevice->geometry.sectorSize = fdevice->geometry.pagesPerSector * fdevice->geometry.pageSize;
     fdevice->geometry.totalSize = fdevice->geometry.sectorSize * fdevice->geometry.sectors;
+
+    // Adjust the SPI bus clock frequency
+#ifndef FLASH_SPI_SHARED
+    spiSetDivisor(fdevice->io.handle.busdev->busdev_u.spi.instance, spiSpeed);
+#endif
 
     if (fdevice->geometry.totalSize > 16 * 1024 * 1024) {
         fdevice->isLargeFlash = true;

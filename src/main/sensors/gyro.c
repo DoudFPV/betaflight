@@ -31,6 +31,7 @@
 #include "common/axis.h"
 #include "common/maths.h"
 #include "common/filter.h"
+#include "common/dynLpf2.h"
 
 #include "config/feature.h"
 
@@ -132,6 +133,17 @@ void pgResetFn_gyroConfig(gyroConfig_t *gyroConfig)
     gyroConfig->dyn_notch_q = 120;
     gyroConfig->dyn_notch_min_hz = 150;
     gyroConfig->gyro_filter_debug_axis = FD_ROLL;
+#ifdef USE_DYN_LPF2
+    gyroConfig->dynlpf2_fmin = DEFAULT_DYNLPF2_FMIN;
+    gyroConfig->dynlpf2_fmax = DEFAULT_DYNLPF2_FMAX;
+    gyroConfig->dynlpf2_gain = DEFAULT_DYNLPF2_GAIN;
+    gyroConfig->dynlpf2_fc_fc = DEFAULT_DYNLPF2_FC_FC;
+    gyroConfig->dynlpf2_center_threshold = DEFAULT_DYNLPF2_CENTER_THRESHOLD;
+    gyroConfig->dynlpf2_throttle_threshold = DEFAULT_DYNLPF2_THROTTLE_THRESHOLD;
+    gyroConfig->dynlpf2_throttle_gain = DEFAULT_DYNLPF2_THROTTLE_GAIN;
+    gyroConfig->dynlpf2_enable = DEFAULT_DYNLPF2_ENABLE;
+    gyroConfig->dynlpf2_type = DEFAULT_DYNLPF2_TYPE;
+#endif
 }
 
 #ifdef USE_GYRO_DATA_ANALYSE

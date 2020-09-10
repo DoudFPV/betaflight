@@ -536,6 +536,17 @@ static uint16_t gyroConfig_gyro_soft_notch_hz_2;
 static uint16_t gyroConfig_gyro_soft_notch_cutoff_2;
 static uint8_t  gyroConfig_gyro_to_use;
 
+#ifdef USE_DYN_LPF2
+static uint16_t gyroConfig_dynlpf2_fmin;
+static uint16_t gyroConfig_dynlpf2_fmax;
+static uint16_t gyroConfig_dynlpf2_gain;
+static uint16_t gyroConfig_dynlpf2_fc_fc;
+static uint16_t gyroConfig_dynlpf2_throttle_threshold;
+static uint16_t gyroConfig_dynlpf2_throttle_gain;
+static uint8_t  gyroConfig_dynlpf2_dynlpf2_enable;
+static uint8_t  gyroConfig_dynlpf2_dynlpf2_type;
+#endif
+
 static const void *cmsx_menuGyro_onEnter(displayPort_t *pDisp)
 {
     UNUSED(pDisp);
@@ -547,6 +558,17 @@ static const void *cmsx_menuGyro_onEnter(displayPort_t *pDisp)
     gyroConfig_gyro_soft_notch_hz_2 = gyroConfig()->gyro_soft_notch_hz_2;
     gyroConfig_gyro_soft_notch_cutoff_2 = gyroConfig()->gyro_soft_notch_cutoff_2;
     gyroConfig_gyro_to_use = gyroConfig()->gyro_to_use;
+
+#ifdef USE_DYN_LPF2
+    gyroConfig_dynlpf2_fmin = gyroConfig()->dynlpf2_fmin;
+    gyroConfig_dynlpf2_fmax = gyroConfig()->dynlpf2_fmax;
+    gyroConfig_dynlpf2_gain = gyroConfig()->dynlpf2_gain;
+    gyroConfig_dynlpf2_fc_fc = gyroConfig()->dynlpf2_fc_fc;
+    gyroConfig_dynlpf2_throttle_threshold = gyroConfig()->dynlpf2_throttle_threshold;
+    gyroConfig_dynlpf2_throttle_gain = gyroConfig()->dynlpf2_throttle_gain;
+    gyroConfig_dynlpf2_dynlpf2_enable = gyroConfig()->dynlpf2_enable;
+    gyroConfig_dynlpf2_dynlpf2_type = gyroConfig()->dynlpf2_type;
+#endif
 
     return NULL;
 }
@@ -563,6 +585,17 @@ static const void *cmsx_menuGyro_onExit(displayPort_t *pDisp, const OSD_Entry *s
     gyroConfigMutable()->gyro_soft_notch_hz_2 = gyroConfig_gyro_soft_notch_hz_2;
     gyroConfigMutable()->gyro_soft_notch_cutoff_2 = gyroConfig_gyro_soft_notch_cutoff_2;
     gyroConfigMutable()->gyro_to_use = gyroConfig_gyro_to_use;
+
+#ifdef USE_DYN_LPF2
+    gyroConfigMutable()->dynlpf2_fmin = gyroConfig_dynlpf2_fmin;
+    gyroConfigMutable()->dynlpf2_fmax = gyroConfig_dynlpf2_fmax;
+    gyroConfigMutable()->dynlpf2_gain = gyroConfig_dynlpf2_gain;
+    gyroConfigMutable()->dynlpf2_fc_fc = gyroConfig_dynlpf2_fc_fc;
+    gyroConfigMutable()->dynlpf2_throttle_threshold = gyroConfig_dynlpf2_throttle_threshold;
+    gyroConfigMutable()->dynlpf2_throttle_gain = gyroConfig_dynlpf2_throttle_gain;
+    gyroConfigMutable()->dynlpf2_enable = gyroConfig_dynlpf2_dynlpf2_enable;
+    gyroConfigMutable()->dynlpf2_type = gyroConfig_dynlpf2_dynlpf2_type;
+#endif
 
     return NULL;
 }
@@ -582,7 +615,18 @@ static const OSD_Entry cmsx_menuFilterGlobalEntries[] =
 #ifdef USE_MULTI_GYRO
     { "GYRO TO USE",  OME_TAB,  NULL, &(OSD_TAB_t)    { &gyroConfig_gyro_to_use,  2, osdTableGyroToUse}, REBOOT_REQUIRED },
 #endif
-	
+
+#ifdef USE_DYN_LPF2
+    { "DLPF2 ENABLE",   OME_UINT8, NULL, &(OSD_UINT8_t) { &gyroConfig_dynlpf2_dynlpf2_enable, 0, 1, 1 }, 0 },
+    { "DLPF2 THRO_BRKPT",  OME_UINT16, NULL, &(OSD_UINT16_t) { &gyroConfig_dynlpf2_throttle_threshold, 0,   100, 1 }, 0 },
+    { "DLPF2 THRO_GAIN",   OME_UINT16, NULL, &(OSD_UINT16_t) { &gyroConfig_dynlpf2_throttle_gain, 0,   20, 1 }, 0 },
+    { "DLPF2 GAIN",   OME_UINT16, NULL, &(OSD_UINT16_t) { &gyroConfig_dynlpf2_gain, 0,  150, 1 }, 0 },
+    { "DLPF2 FMIN",   OME_UINT16, NULL, &(OSD_UINT16_t) { &gyroConfig_dynlpf2_fmin, 0, 1000, 1 }, 0 },
+    { "DLPF2 TYPE",   OME_UINT8, NULL, &(OSD_UINT8_t) { &gyroConfig_dynlpf2_dynlpf2_type, 0, 1, 1 }, 0 },
+    //{ "DLPF2 FMAX",   OME_UINT16, NULL, &(OSD_UINT16_t) { &gyroConfig_dynlpf2_fmax, 0, 1000, 1 }, 0 },
+    //{ "DLPF2 FCFC",   OME_UINT16, NULL, &(OSD_UINT16_t) { &gyroConfig_dynlpf2_gain, 0,   50, 1 }, 0 },
+#endif
+
     { "BACK", OME_Back, NULL, NULL, 0 },
     { NULL, OME_END, NULL, NULL, 0 }
 };

@@ -195,6 +195,17 @@ typedef struct gyroConfig_s {
     uint16_t dyn_notch_min_hz;
 
     uint8_t  gyro_filter_debug_axis;
+#ifdef USE_DYN_LPF2
+    uint16_t dynlpf2_fmin;
+    uint16_t dynlpf2_fmax;
+    uint16_t dynlpf2_gain;
+    uint16_t dynlpf2_fc_fc;
+    uint16_t dynlpf2_center_threshold;
+    uint16_t dynlpf2_throttle_threshold;
+    uint16_t dynlpf2_throttle_gain;
+    uint8_t  dynlpf2_enable;
+    uint8_t  dynlpf2_type;
+#endif
 
     uint8_t gyrosDetected; // What gyros should detection be attempted for on startup. Automatically set on first startup.
 } gyroConfig_t;

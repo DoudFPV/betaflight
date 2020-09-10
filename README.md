@@ -1,3 +1,37 @@
+# This code is BF 4.2.2 + DynLPF2 + On/Off Dyn Notch
+
+The DynLPF2 is a simple PT1 filter where cutoff frequency move dynamically during the flight. The main idea of this filter is to keep cutoff freq very low (60Hz) while it is possible and rise the cutoff frequency very quickly when the quad needs more dynamic (Example : during flips, propwash).
+
+### Important : Always use notchs filter with DynLPF2 to remove the main motor noise + frame resonance, this filter won't remove big noise.(typically use RPM filter 3 harmonics + narrow Dynamic notch). 
+
+#### For filter setup, I have DynLPF2 + filter config below : 
+![DynLPF2_filter_setting](/docs/assets/images/default_dynlpf2_filter_setting.png)
+
+### For blackbox: � set debug_mode = DYN_LPF2 �
+
+* Debug[0] = filter input
+* Debug[1] = filter output
+* Debug[2] = filter cutoff frequency
+* Debug[3] = rc setpoint rate
+
+## Tuning
+Please first try with default value.
+After a first flight with default values, you can tune it as below : 
+
+Main parameters are avalable in OSD : � Filter GLB � => � Params starting with DYNLPF2 �.
+
+-	� DLPF2 ENABLE �: 0 to disable filter / 1 to enable.
+
+-	� DLPF2 THRO_BRKPT � : is a throttle threshold in %. When throttle is above this value, Fmin will rise according to DYNLP2 THRO_GAIN.
+
+-	� DLPF2 THRO_GAIN � : is in Hz / % throttle. It is how fast Fmin rise when throttle is above � DYNLP2 THRO_BRKPT �. Example : if � DYNLP2 THRO_BRKPT �=38%  and  � DYNLP2 THRO_GAIN �  = 10Hz/% => When throttle = 50%. Fmin = 60Hz + (50-38)*10 => 180Hz.You can tune DYNLP2 THRO_BRKPT  / DYNLP2 THRO_BRKPT to found the good spot between smooth when throttle is over 38% vs propwash.
+
+-	� DLPF2 GAIN � : is to increase/decrese sensitivity according to error.if value is big (100), cutoff freq of the filter will rise really quick on gyro � setpoint error.Lower this value will make it smoother, but also more sensitive to propwash. (Start with default).
+
+-	� DLPF2 FMIN� : is the min/base frequency of the filter.60Hz seems to be good on 5��
+
+
+
 ![Important Notice: Support for STM32F3 based flight controllers was dropped in Betaflight 4.1. (This includes all boards with 'F3' in the name.)](docs/assets/images/stm32f3_retirement_notice.svg)
 
 (Please see the [note](#end-of-active-development-for-stm32f3-based-flight-controllers) below.)
@@ -116,7 +150,7 @@ https://travis-ci.com/betaflight/betaflight
 
 ## Translators
 
-We want to make Betaflight accessible for pilots who are not fluent in English, and for this reason we are currently maintaining translations into 18 languages for Betaflight Configurator: Català, Deutsch, Español, Euskera, Français, Galego, Hrvatski, Bahasa Indonesia, Italiano, 日本語, 한국어, Latviešu, Português, Português Brasileiro, polski, Русский язык, Svenska, 简体中文.
+We want to make Betaflight accessible for pilots who are not fluent in English, and for this reason we are currently maintaining translations into 18 languages for Betaflight Configurator: Català, Deutsch, Español, Euskera, Français, Galego, Hrvatski, Bahasa Indonesia, Italiano, 日本語, 한국어, Latviešu, Português, Português Brasileiro, polski, Руѝѝкий ѝзык, Svenska, 简体中文.
 We have got a team of volunteer translators who do this work, but additional translators are always welcome to share the workload, and we are keen to add additional languages. If you would like to help us with translations, you have got the following options:
 - if you help by suggesting some updates or improvements to translations in a language you are familiar with, head to [crowdin](https://crowdin.com/project/betaflight-configurator) and add your suggested translations there;
 - if you would like to start working on the translation for a new language, or take on responsibility for proof-reading the translation for a language you are very familiar with, please head to the Betaflight Slack (registration [here](https://slack.betaflight.com/)), and join the '#team\_translation' channel - the people in there can help you to get a new language added, or set you up as a proof reader.

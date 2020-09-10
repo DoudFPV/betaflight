@@ -645,6 +645,17 @@ const clivalue_t valueTable[] = {
     { "yaw_spin_recovery",          VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON_AUTO }, PG_GYRO_CONFIG, offsetof(gyroConfig_t, yaw_spin_recovery) },
     { "yaw_spin_threshold",         VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { YAW_SPIN_RECOVERY_THRESHOLD_MIN,  YAW_SPIN_RECOVERY_THRESHOLD_MAX }, PG_GYRO_CONFIG, offsetof(gyroConfig_t, yaw_spin_threshold) },
 #endif
+#ifdef USE_DYN_LPF2
+    { "dynlpf2_fmin",                VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 1000 },   PG_GYRO_CONFIG, offsetof(gyroConfig_t, dynlpf2_fmin) },
+    { "dynlpf2_fmax",                VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 1000 },   PG_GYRO_CONFIG, offsetof(gyroConfig_t, dynlpf2_fmax) },
+    { "dynlpf2_gain",                VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0,  200 },   PG_GYRO_CONFIG, offsetof(gyroConfig_t, dynlpf2_gain) },
+    { "dynlpf2_fc_fc",               VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0,   50 },   PG_GYRO_CONFIG, offsetof(gyroConfig_t, dynlpf2_fc_fc) },
+    { "dynlpf2_center_threshold",    VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0,  100 },    PG_GYRO_CONFIG, offsetof(gyroConfig_t, dynlpf2_center_threshold) },
+    { "dynlpf2_throttle_threshold",  VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0,  100 },    PG_GYRO_CONFIG, offsetof(gyroConfig_t, dynlpf2_throttle_threshold) },
+    { "dynlpf2_throttle_gain",       VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0,  200 },    PG_GYRO_CONFIG, offsetof(gyroConfig_t, dynlpf2_throttle_gain) },
+    { "dynlpf2_enable",              VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0,    1 },    PG_GYRO_CONFIG, offsetof(gyroConfig_t, dynlpf2_enable) },
+    { "dynlpf2_type",                VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0,    1 },    PG_GYRO_CONFIG, offsetof(gyroConfig_t, dynlpf2_type) },
+#endif
 
 #ifdef USE_MULTI_GYRO
     { "gyro_to_use",                VAR_UINT8  | HARDWARE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_GYRO }, PG_GYRO_CONFIG, offsetof(gyroConfig_t, gyro_to_use) },

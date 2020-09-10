@@ -31,6 +31,7 @@
 #include "common/axis.h"
 #include "common/maths.h"
 #include "common/filter.h"
+#include "common/dynLpf2.h"
 
 #include "config/config.h"
 
@@ -261,6 +262,9 @@ void gyroInitFilters(void)
 #endif
 #ifdef USE_DYN_LPF
     dynLpfFilterInit();
+#endif
+#ifdef USE_DYN_LPF2
+    init_dynLpf2();
 #endif
 #ifdef USE_GYRO_DATA_ANALYSE
     gyroDataAnalyseStateInit(&gyro.gyroAnalyseState, gyro.targetLooptime);

@@ -93,6 +93,7 @@ const char * const debugModeNames[DEBUG_COUNT] = {
     "DYN_IDLE",
     "FF_LIMIT",
     "FF_INTERPOLATED",
+    "DYN_LPF2",
     "BLACKBOX_OUTPUT",
     "GYRO_SAMPLE",
     "RX_TIMING",

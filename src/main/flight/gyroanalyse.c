@@ -315,18 +315,6 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
         float centerFreq = dynNotchMaxHz;
         float fftMeanIndex = 0;
 
-        //Check if we apply a strong high Q value (lower latency)
-            bool dataMaxOverThreshold = false;
-            uint32_t currentMs = millis();
-
-            if(dataMax > dynNotchMinFftAmplitude) {
-                dataMaxOverThreshold = true;
-                lastTimeDnWasEnable[state->updateAxis] = currentMs;
-            }
-            
-        //Force DN to be enable X ms after dataMax be below threshold.
-        if(dataMaxOverThreshold || (currentMs < (lastTimeDnWasEnable[state->updateAxis] + gyroConfig()->dyn_notch_disable_post_time) )) {        
-
             if (binMax == 0) { // no bin increase, hold prev max bin, dataMin = 1 dataMax = 0, ie move slow
                 binMax = lrintf(state->centerFreq[state->updateAxis] / fftResolution);
             } else { // there was a max, find min
@@ -378,11 +366,21 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
                 centerFreq = state->centerFreq[state->updateAxis];
             }
             centerFreq = constrainf(centerFreq, dynNotchMinHz, dynNotchMaxHz);
+
+        //Check if we apply a strong high Q value (lower latency)
+            bool dataMaxOverThreshold = false;
+            uint32_t currentMs = millis();
+
+            if(dataMax > dynNotchMinFftAmplitude) {
+                dataMaxOverThreshold = true;
+                lastTimeDnWasEnable[state->updateAxis] = currentMs;
+            }
+            
+        //Force DN to be enable X ms after dataMax be below threshold.
+        if(dataMaxOverThreshold || (currentMs < (lastTimeDnWasEnable[state->updateAxis] + gyroConfig()->dyn_notch_disable_post_time) )) {        
             dynNotchQ = gyroConfig()->dyn_notch_q / 100.0f;
             dynNotchEnable[state->updateAxis] = true;
-
         }else{
-            centerFreq = dynNotchMaxHz;
             dynNotchQ = DTN_NOTCH_Q_WHEN_DISABLED;              //Set Q very hight to lower latency of the filter.
             dynNotchEnable[state->updateAxis] = false;
         }

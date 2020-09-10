@@ -86,6 +86,8 @@
 #define DYN_NOTCH_CALC_TICKS      (XYZ_AXIS_COUNT * 4) // 4 steps per axis
 #define DYN_NOTCH_OSD_MIN_THROTTLE 20
 
+#define DTN_NOTCH_Q_WHEN_DISABLED   10.0f
+
 static uint16_t FAST_RAM_ZERO_INIT   fftSamplingRateHz;
 static float FAST_RAM_ZERO_INIT      fftResolution;
 static uint8_t FAST_RAM_ZERO_INIT    fftStartBin;
@@ -94,10 +96,17 @@ static float FAST_RAM_ZERO_INIT      dynNotch1Ctr;
 static float FAST_RAM_ZERO_INIT      dynNotch2Ctr;
 static uint16_t FAST_RAM_ZERO_INIT   dynNotchMinHz;
 static uint16_t FAST_RAM_ZERO_INIT   dynNotchMaxHz;
+static float FAST_RAM_ZERO_INIT      dynNotchMinFftAmplitude;
 static bool FAST_RAM                 dualNotch = true;
 static uint16_t FAST_RAM_ZERO_INIT   dynNotchMaxFFT;
 static float FAST_RAM_ZERO_INIT      smoothFactor;
 static uint8_t FAST_RAM_ZERO_INIT    samples;
+
+static bool FAST_RAM_ZERO_INIT      dynNotchEnable[XYZ_AXIS_COUNT];
+static uint32_t FAST_RAM_ZERO_INIT  lastTimeDnWasEnable[XYZ_AXIS_COUNT];
+static float FAST_RAM_ZERO_INIT     dynNotchQ_filtered[XYZ_AXIS_COUNT];
+
+
 // Hanning window, see https://en.wikipedia.org/wiki/Window_function#Hann_.28Hanning.29_window
 static FAST_RAM_ZERO_INIT float hanningWindow[FFT_WINDOW_SIZE];
 
@@ -116,6 +125,17 @@ void gyroDataAnalyseInit(uint32_t targetLooptimeUs)
     dynNotchQ = gyroConfig()->dyn_notch_q / 100.0f;
     dynNotchMinHz = gyroConfig()->dyn_notch_min_hz;
     dynNotchMaxHz = MAX(2 * dynNotchMinHz, gyroConfig()->dyn_notch_max_hz);
+    for(int i =0 ; i < XYZ_AXIS_COUNT ; i++) {
+        dynNotchEnable[i] = true;
+        lastTimeDnWasEnable[i] = 0;
+        dynNotchQ_filtered[i] = 0.0f;
+    }
+
+    if(gyroConfig()->dyn_notch_min_fft_amplitude > 0) {
+        dynNotchMinFftAmplitude = ((float)gyroConfig()->dyn_notch_min_fft_amplitude);
+    }else{
+        dynNotchMinFftAmplitude = -1.0f;
+    }
 
     if (gyroConfig()->dyn_notch_width_percent == 0) {
         dualNotch = false;
@@ -291,6 +311,22 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
                     }
                 }
             }
+
+        float centerFreq = dynNotchMaxHz;
+        float fftMeanIndex = 0;
+
+        //Check if we apply a strong high Q value (lower latency)
+            bool dataMaxOverThreshold = false;
+            uint32_t currentMs = millis();
+
+            if(dataMax > dynNotchMinFftAmplitude) {
+                dataMaxOverThreshold = true;
+                lastTimeDnWasEnable[state->updateAxis] = currentMs;
+            }
+            
+        //Force DN to be enable X ms after dataMax be below threshold.
+        if(dataMaxOverThreshold || (currentMs < (lastTimeDnWasEnable[state->updateAxis] + gyroConfig()->dyn_notch_disable_post_time) )) {        
+
             if (binMax == 0) { // no bin increase, hold prev max bin, dataMin = 1 dataMax = 0, ie move slow
                 binMax = lrintf(state->centerFreq[state->updateAxis] / fftResolution);
             } else { // there was a max, find min
@@ -331,8 +367,6 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
             }
 
             // get centerFreq in Hz from weighted bins
-            float centerFreq = dynNotchMaxHz;
-            float fftMeanIndex = 0;
             if (fftSum > 0) {
                 fftMeanIndex = (fftWeightedSum / fftSum);
                 centerFreq = fftMeanIndex * fftResolution;
@@ -344,10 +378,21 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
                 centerFreq = state->centerFreq[state->updateAxis];
             }
             centerFreq = constrainf(centerFreq, dynNotchMinHz, dynNotchMaxHz);
+            dynNotchQ = gyroConfig()->dyn_notch_q / 100.0f;
+            dynNotchEnable[state->updateAxis] = true;
+
+        }else{
+            centerFreq = dynNotchMaxHz;
+            dynNotchQ = DTN_NOTCH_Q_WHEN_DISABLED;              //Set Q very hight to lower latency of the filter.
+            dynNotchEnable[state->updateAxis] = false;
+        }
 
             // PT1 style dynamic smoothing moves rapidly towards big peaks and slowly away, up to 8x faster
             float dynamicFactor = constrainf(dataMax / dataMin, 1.0f, 8.0f);
             state->centerFreq[state->updateAxis] = state->centerFreq[state->updateAxis] + smoothFactor * dynamicFactor * (centerFreq - state->centerFreq[state->updateAxis]);
+
+            //PT1 at 4hz*8 filter for Q
+            dynNotchQ_filtered[state->updateAxis] = dynNotchQ_filtered[state->updateAxis] + smoothFactor * 8.0f * (dynNotchQ - dynNotchQ_filtered[state->updateAxis]);
 
             if(calculateThrottlePercentAbs() > DYN_NOTCH_OSD_MIN_THROTTLE) {
                 dynNotchMaxFFT = MAX(dynNotchMaxFFT, state->centerFreq[state->updateAxis]);
@@ -356,7 +401,8 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
             if (state->updateAxis == 0) {
                 DEBUG_SET(DEBUG_FFT, 3, lrintf(fftMeanIndex * 100));
                 DEBUG_SET(DEBUG_FFT_FREQ, 0, state->centerFreq[state->updateAxis]);
-                DEBUG_SET(DEBUG_FFT_FREQ, 1, lrintf(dynamicFactor * 100));
+                DEBUG_SET(DEBUG_FFT_FREQ, 1, lrintf(dataMax));
+                DEBUG_SET(DEBUG_FFT_FREQ, 3, lrintf(dynNotchQ_filtered[state->updateAxis] * 100.0f));
                 DEBUG_SET(DEBUG_DYN_LPF, 1, state->centerFreq[state->updateAxis]);
             }
 //            if (state->updateAxis == 1) {
@@ -371,10 +417,10 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
             // 7us
             // calculate cutoffFreq and notch Q, update notch filter
             if (dualNotch) {
-                biquadFilterUpdate(&notchFilterDyn[state->updateAxis], state->centerFreq[state->updateAxis] * dynNotch1Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
-                biquadFilterUpdate(&notchFilterDyn2[state->updateAxis], state->centerFreq[state->updateAxis] * dynNotch2Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+                biquadFilterUpdate(&notchFilterDyn[state->updateAxis], state->centerFreq[state->updateAxis] * dynNotch1Ctr, gyro.targetLooptime, dynNotchQ_filtered[state->updateAxis], FILTER_NOTCH);
+                biquadFilterUpdate(&notchFilterDyn2[state->updateAxis], state->centerFreq[state->updateAxis] * dynNotch2Ctr, gyro.targetLooptime, dynNotchQ_filtered[state->updateAxis], FILTER_NOTCH);
             } else {
-                biquadFilterUpdate(&notchFilterDyn[state->updateAxis], state->centerFreq[state->updateAxis], gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+                biquadFilterUpdate(&notchFilterDyn[state->updateAxis], state->centerFreq[state->updateAxis], gyro.targetLooptime, dynNotchQ_filtered[state->updateAxis], FILTER_NOTCH);
             }
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
 
@@ -406,6 +452,16 @@ uint16_t getMaxFFT(void) {
 
 void resetMaxFFT(void) {
     dynNotchMaxFFT = 0;
+}
+
+bool OsdDynNotchActive(void)
+{
+    for(int i = 0; i < XYZ_AXIS_COUNT ; i++) {
+        if(dynNotchEnable[i] == true) {
+            return true;
+        }
+    }
+    return false;
 }
 
 #endif // USE_GYRO_DATA_ANALYSE

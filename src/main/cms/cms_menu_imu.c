@@ -605,6 +605,8 @@ static uint16_t dynFiltNotchMaxHz;
 static uint8_t  dynFiltWidthPercent;
 static uint16_t dynFiltNotchQ;
 static uint16_t dynFiltNotchMinHz;
+static uint16_t dynNotchMinFftAmplitude;
+static uint16_t dynNotchDisablePostTime;
 #endif
 #ifdef USE_DYN_LPF
 static uint16_t dynFiltGyroMin;
@@ -623,6 +625,8 @@ static const void *cmsx_menuDynFilt_onEnter(displayPort_t *pDisp)
     dynFiltWidthPercent = gyroConfig()->dyn_notch_width_percent;
     dynFiltNotchQ       = gyroConfig()->dyn_notch_q;
     dynFiltNotchMinHz   = gyroConfig()->dyn_notch_min_hz;
+    dynNotchMinFftAmplitude = gyroConfig()->dyn_notch_min_fft_amplitude;
+    dynNotchDisablePostTime =  gyroConfig()->dyn_notch_disable_post_time;
 #endif
 #ifdef USE_DYN_LPF
     const pidProfile_t *pidProfile = pidProfiles(pidProfileIndex);
@@ -646,6 +650,8 @@ static const void *cmsx_menuDynFilt_onExit(displayPort_t *pDisp, const OSD_Entry
     gyroConfigMutable()->dyn_notch_width_percent = dynFiltWidthPercent;
     gyroConfigMutable()->dyn_notch_q             = dynFiltNotchQ;
     gyroConfigMutable()->dyn_notch_min_hz        = dynFiltNotchMinHz;
+    gyroConfigMutable()->dyn_notch_min_fft_amplitude = dynNotchMinFftAmplitude;
+    gyroConfigMutable()->dyn_notch_disable_post_time = dynNotchDisablePostTime;
 #endif
 #ifdef USE_DYN_LPF
     pidProfile_t *pidProfile = currentPidProfile;
@@ -668,6 +674,8 @@ static const OSD_Entry cmsx_menuDynFiltEntries[] =
     { "NOTCH Q",        OME_UINT16, NULL, &(OSD_UINT16_t) { &dynFiltNotchQ,       0, 1000, 1 }, 0 },
     { "NOTCH MIN HZ",   OME_UINT16, NULL, &(OSD_UINT16_t) { &dynFiltNotchMinHz,   0, 1000, 1 }, 0 },
     { "NOTCH MAX HZ",   OME_UINT16, NULL, &(OSD_UINT16_t) { &dynFiltNotchMaxHz,   0, 1000, 1 }, 0 },
+    { "NOTCH MIN FFT",   OME_UINT16, NULL, &(OSD_UINT16_t) { &dynNotchMinFftAmplitude,   0, 1000, 1 }, 0 },
+    { "NOTCH POST MS",   OME_UINT16, NULL, &(OSD_UINT16_t) { &dynNotchDisablePostTime,   0, 60000, 1 }, 0 },
 #endif
 
 #ifdef USE_DYN_LPF

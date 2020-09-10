@@ -1381,6 +1381,8 @@ static bool blackboxWriteSysinfo(void)
         BLACKBOX_PRINT_HEADER_LINE("dyn_notch_width_percent", "%d",         gyroConfig()->dyn_notch_width_percent);
         BLACKBOX_PRINT_HEADER_LINE("dyn_notch_q", "%d",                     gyroConfig()->dyn_notch_q);
         BLACKBOX_PRINT_HEADER_LINE("dyn_notch_min_hz", "%d",                gyroConfig()->dyn_notch_min_hz);
+        BLACKBOX_PRINT_HEADER_LINE("dyn_notch_min_fft_amplitude", "%d",     gyroConfig()->dyn_notch_min_fft_amplitude);
+        BLACKBOX_PRINT_HEADER_LINE("dyn_notch_disable_post_time", "%d",     gyroConfig()->dyn_notch_disable_post_time);
 #endif
 #ifdef USE_DSHOT_TELEMETRY
         BLACKBOX_PRINT_HEADER_LINE("dshot_bidir", "%d",                     motorConfig()->dev.useDshotTelemetry);

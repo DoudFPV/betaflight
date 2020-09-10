@@ -193,6 +193,8 @@ typedef struct gyroConfig_s {
     uint8_t  dyn_notch_width_percent;
     uint16_t dyn_notch_q;
     uint16_t dyn_notch_min_hz;
+    uint16_t dyn_notch_min_fft_amplitude;
+    uint16_t dyn_notch_disable_post_time;
 
     uint8_t  gyro_filter_debug_axis;
 
